@@ -177,7 +177,7 @@ When a link is clicked within the frame:
 
 The library parses HTML responses looking for:
 
-1. A `<turbo-frame>` element (for backwards compatibility)
+1. A `<turbo-frame>` element (for compatibility with Turbo's Turbo Frames)
 2. Falls back to `<body>` content if no turbo-frame found
 
 ## Server-Side Integration
