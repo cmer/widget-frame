@@ -203,16 +203,6 @@
   }
 
   /**
-   * Check if a status code is a redirect
-   * @param {number} status - HTTP status code
-   * @returns {boolean}
-   * @private
-   */
-  function isRedirectStatus (status) {
-    return status >= 300 && status < 400
-  }
-
-  /**
    * Load content into the frame
    * @param {string} url - URL to load
    * @param {Object} [options] - Fetch options
@@ -238,9 +228,7 @@
     const fetchOptions = {
       method,
       headers: headers,
-      credentials: this.credentials,
-      // Use manual redirect handling to capture session tokens from redirect responses
-      redirect: 'manual'
+      credentials: this.credentials
     }
 
     if (body) {
@@ -249,39 +237,20 @@
 
     return fetch(url, fetchOptions)
       .then(function (response) {
-        // Always capture session token from response header, even on redirects
+        if (!response.ok) {
+          throw new Error('Network response was not ok: ' + response.status)
+        }
+        // Capture session token from response header for next request
         if (self.sessionHeader) {
           const sessionValue = response.headers.get(self.sessionHeader)
           if (sessionValue) {
             self.sessionToken = sessionValue
           }
         }
-
-        // Handle redirects manually to preserve session token
-        if (response.type === 'opaqueredirect' || isRedirectStatus(response.status)) {
-          const location = response.headers.get('Location')
-          if (location) {
-            // Follow the redirect with a GET request (standard redirect behavior)
-            // The session token we just captured will be included
-            return self.load(resolveUrl(location, self.baseUrl))
-          }
-          // If no location header, treat as error
-          throw new Error('Redirect response missing Location header')
-        }
-
-        if (!response.ok) {
-          throw new Error('Network response was not ok: ' + response.status)
-        }
-
         return response.text()
       })
-      .then(function (result) {
-        // If result is undefined, it means we followed a redirect (recursive call)
-        if (result === undefined) {
-          return
-        }
-
-        const content = parseHtmlContent(result)
+      .then(function (html) {
+        const content = parseHtmlContent(html)
         if (content) {
           self.element.innerHTML = content
           self._dispatchLoadEvent()
