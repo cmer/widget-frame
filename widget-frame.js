@@ -154,6 +154,12 @@
 
       e.preventDefault()
 
+      // Check for turbo-confirm attribute (Turbo-compatible confirmation)
+      const confirmMessage = form.getAttribute('data-turbo-confirm')
+      if (confirmMessage && !window.confirm(confirmMessage)) {
+        return // User cancelled
+      }
+
       const method = (form.method || 'GET').toUpperCase()
       const action = form.action || self.baseUrl
       const formData = new FormData(form)

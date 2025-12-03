@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.2] - 2025-12-03
+
+### Added
+
+- **Turbo-compatible confirmation dialogs**: Forms with `data-turbo-confirm` attribute now show a native browser confirmation dialog before submitting. If the user cancels, the form submission is aborted.
+
 ## [0.2.1] - 2025-12-03
 
 ### Fixed
