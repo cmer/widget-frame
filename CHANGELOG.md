@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.3] - 2025-12-03
+
 ### Removed
 
 - **Reverted manual redirect handling**: Removed the `redirect: 'manual'` fetch option and associated redirect-following logic introduced in v0.2.1. The browser's default redirect handling is now used instead.
