@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.1] - 2025-12-03
+
+### Fixed
+
+- **Session tokens now preserved across HTTP redirects**: Fixed an issue where session tokens were lost during HTTP redirects.
+
 ## [0.2.0] - 2024-12-03
 
 ### Added
