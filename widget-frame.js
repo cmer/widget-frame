@@ -48,6 +48,7 @@
       '<div class="br-error">Failed to load content. Please try again.</div>',
     frameClass: 'widget-frame-container',
     credentials: 'include', // 'include' for cross-origin cookies, 'same-origin' otherwise
+    sessionHeader: 'X-Widget-Session', // Header for session token (cross-origin session support)
     headers: {
       Accept: 'text/html, application/xhtml+xml',
       'X-Requested-With': 'XMLHttpRequest'
@@ -94,6 +95,7 @@
    * @param {string} [options.errorHtml] - HTML to show on error
    * @param {string} [options.frameClass] - CSS class for the frame element
    * @param {string} [options.credentials] - Fetch credentials mode
+   * @param {string} [options.sessionHeader] - Header name for session token (default: 'X-Widget-Session')
    * @param {Object} [options.headers] - Additional headers for fetch requests
    * @param {Function} [options.onLoad] - Callback after content loads
    * @param {Function} [options.onError] - Callback on error
@@ -113,9 +115,14 @@
     this.errorHtml = options.errorHtml || DEFAULTS.errorHtml
     this.frameClass = options.frameClass || DEFAULTS.frameClass
     this.credentials = options.credentials || DEFAULTS.credentials
+    this.sessionHeader = options.sessionHeader || DEFAULTS.sessionHeader
     this.headers = Object.assign({}, DEFAULTS.headers, options.headers || {})
     this.onLoad = options.onLoad || null
     this.onError = options.onError || null
+
+    // Session token for cross-origin session support
+    // Stored from response headers and sent on subsequent requests
+    this.sessionToken = null
 
     // Create frame element
     this.element = document.createElement('div')
@@ -206,9 +213,15 @@
     // Show loading state
     this.element.setAttribute('aria-busy', 'true')
 
+    // Build headers, including session token if we have one
+    const headers = Object.assign({}, this.headers)
+    if (this.sessionToken && this.sessionHeader) {
+      headers[this.sessionHeader] = this.sessionToken
+    }
+
     const fetchOptions = {
       method,
-      headers: this.headers,
+      headers: headers,
       credentials: this.credentials
     }
 
@@ -220,6 +233,13 @@
       .then(function (response) {
         if (!response.ok) {
           throw new Error('Network response was not ok: ' + response.status)
+        }
+        // Capture session token from response header for next request
+        if (self.sessionHeader) {
+          const sessionValue = response.headers.get(self.sessionHeader)
+          if (sessionValue) {
+            self.sessionToken = sessionValue
+          }
         }
         return response.text()
       })
