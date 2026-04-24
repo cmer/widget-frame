@@ -64,8 +64,8 @@ WidgetFrame.create({
   errorHtml: '<div>Error loading content</div>', // HTML shown on error
   frameClass: 'my-widget-frame',                 // CSS class for the frame
   credentials: 'include',                        // Fetch credentials mode
+  scrollToTop: true,                             // Scroll widget into view on navigation if top is off-screen
   headers: { 'X-Custom': 'value' },              // Additional headers
-  scrollToTop: true,                             // Scroll widget into view after in-widget navigation
   scrollOffset: '.site-navbar',                  // Pixel offset (number) or selector for a fixed navbar
 
   // Callbacks
@@ -86,8 +86,8 @@ WidgetFrame.create({
 | `errorHtml` | string | No | `<div class="br-error">Failed to load...</div>` | HTML to show on error |
 | `frameClass` | string | No | `widget-frame-container` | CSS class for the frame element |
 | `credentials` | string | No | `include` | Fetch credentials mode |
+| `scrollToTop` | boolean | No | `true` | Scroll the widget into view after navigation when its top edge is above the viewport. Skipped on initial load. |
 | `headers` | object | No | See below | Additional headers for requests |
-| `scrollToTop` | boolean | No | `true` | After in-widget navigation, scroll the widget into view if its top edge is above the viewport. Does not fire on the initial load. |
 | `scrollOffset` | number \| string | No | `0` | Space to leave above the widget when scrolling it into view (e.g. for a sticky navbar). Accepts a pixel number, a CSS length string (`"80px"`, `"10vh"`, `"2rem"`, `"5%"`), or a CSS selector whose element height is measured at scroll time so responsive navbars are handled correctly. Invalid values resolve to `0`. |
 | `onLoad` | function | No | - | Callback after content loads |
 | `onError` | function | No | - | Callback on error |
