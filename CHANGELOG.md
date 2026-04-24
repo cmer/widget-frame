@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.5] - 2026-04-24
+
 ### Added
 
 - **`scrollOffset` option**: Tells `scrollToTop` how much space to leave above the widget for a host-page fixed element (e.g. a sticky navbar). Accepts a pixel number, a CSS length string (`"80px"`, `"10vh"`, `"2rem"`, `"5%"` — resolved by the browser), or a CSS selector whose element height is measured at scroll time so responsive navbars are handled correctly. Invalid values resolve to `0` instead of throwing. Defaults to `0`.
