@@ -50,6 +50,7 @@
     credentials: 'include', // 'include' for cross-origin cookies, 'same-origin' otherwise
     sessionHeader: 'X-Widget-Session', // Header for session token (cross-origin session support)
     scrollToTop: true, // Scroll widget into view after navigation if its top is off-screen
+    scrollOffset: 0, // Pixel offset (number) or CSS selector (string) for a fixed navbar above the widget
     headers: {
       Accept: 'text/html, application/xhtml+xml',
       'X-Requested-With': 'XMLHttpRequest'
@@ -86,18 +87,36 @@
   }
 
   /**
-   * Create a WidgetFrame instance
+   * Parse a boolean-ish string. Returns undefined if the value is neither
+   * true-ish nor false-ish, so callers can fall back to another source.
+   * @param {string} value
+   * @returns {boolean|undefined}
+   */
+  function parseBoolAttr (value) {
+    if (value === '' || value === 'true') return true
+    if (value === 'false') return false
+    return undefined
+  }
+
+  /**
+   * Create a WidgetFrame instance.
+   *
+   * Options marked [data-*] below may also be set via data attributes on the
+   * container element. When both are present, the data attribute wins so that
+   * embedders can override JS config from HTML without touching init code.
+   *
    * @param {Object} options - Configuration options
    * @param {HTMLElement} options.container - Container element to append frame to
-   * @param {string} options.baseUrl - Base URL for resolving relative paths
-   * @param {string} [options.frameId] - ID for the frame element
-   * @param {string} [options.initialUrl] - URL to load initially
+   * @param {string} options.baseUrl - [data-widget-frame-base-url] Base URL for resolving relative paths
+   * @param {string} [options.frameId] - [data-widget-frame-id] ID for the frame element
+   * @param {string} [options.initialUrl] - [data-widget-frame-initial-url] URL to load initially
    * @param {string} [options.loadingHtml] - HTML to show while loading
    * @param {string} [options.errorHtml] - HTML to show on error
-   * @param {string} [options.frameClass] - CSS class for the frame element
+   * @param {string} [options.frameClass] - [data-widget-frame-class] CSS class for the frame element
    * @param {string} [options.credentials] - Fetch credentials mode
    * @param {string} [options.sessionHeader] - Header name for session token (default: 'X-Widget-Session')
-   * @param {boolean} [options.scrollToTop=true] - Scroll widget into view on navigation if its top is off-screen
+   * @param {boolean} [options.scrollToTop=true] - [data-widget-frame-scroll-to-top] Scroll widget into view on navigation if its top is off-screen
+   * @param {number|string} [options.scrollOffset=0] - [data-widget-frame-scroll-offset] Pixel offset or CSS selector of a fixed element (e.g. sticky navbar) whose height should be subtracted from the scroll target
    * @param {Object} [options.headers] - Additional headers for fetch requests
    * @param {Function} [options.onLoad] - Callback after content loads
    * @param {Function} [options.onError] - Callback on error
@@ -107,21 +126,49 @@
     if (!options.container) {
       throw new Error('WidgetFrame: container is required')
     }
-    if (!options.baseUrl) {
+
+    const container = options.container
+
+    // Read an option, letting a container data attribute win over the JS
+    // option. If the attribute is absent or the parser rejects its value,
+    // fall back to the JS option.
+    function readOption (jsKey, dataAttr, parser) {
+      const raw = container.getAttribute(dataAttr)
+      if (raw !== null) {
+        const parsed = parser ? parser(raw) : raw
+        if (parsed !== undefined) return parsed
+      }
+      return options[jsKey]
+    }
+
+    this.container = container
+    this.baseUrl = readOption('baseUrl', 'data-widget-frame-base-url')
+
+    if (!this.baseUrl) {
       throw new Error('WidgetFrame: baseUrl is required')
     }
 
-    this.container = options.container
-    this.baseUrl = options.baseUrl
+    const frameId = readOption('frameId', 'data-widget-frame-id')
+    const frameClass = readOption('frameClass', 'data-widget-frame-class')
+    const initialUrl = readOption('initialUrl', 'data-widget-frame-initial-url')
+    const scrollToTop = readOption(
+      'scrollToTop',
+      'data-widget-frame-scroll-to-top',
+      parseBoolAttr
+    )
+    const scrollOffset = readOption(
+      'scrollOffset',
+      'data-widget-frame-scroll-offset'
+    )
+
     this.loadingHtml = options.loadingHtml || DEFAULTS.loadingHtml
     this.errorHtml = options.errorHtml || DEFAULTS.errorHtml
-    this.frameClass = options.frameClass || DEFAULTS.frameClass
+    this.frameClass = frameClass || DEFAULTS.frameClass
     this.credentials = options.credentials || DEFAULTS.credentials
     this.sessionHeader = options.sessionHeader || DEFAULTS.sessionHeader
     this.scrollToTop =
-      options.scrollToTop !== undefined
-        ? options.scrollToTop
-        : DEFAULTS.scrollToTop
+      scrollToTop !== undefined ? scrollToTop : DEFAULTS.scrollToTop
+    this.scrollOffset = scrollOffset !== undefined ? scrollOffset : 0
     this.headers = Object.assign({}, DEFAULTS.headers, options.headers || {})
     this.onLoad = options.onLoad || null
     this.onError = options.onError || null
@@ -136,7 +183,7 @@
 
     // Create frame element
     this.element = document.createElement('div')
-    this.element.id = options.frameId || 'widget-frame-' + Date.now()
+    this.element.id = frameId || 'widget-frame-' + Date.now()
     this.element.className = this.frameClass
     this.element.innerHTML = this.loadingHtml
     this.container.appendChild(this.element)
@@ -145,8 +192,8 @@
     this._setupEventHandlers()
 
     // Load initial content if provided
-    if (options.initialUrl) {
-      this.load(options.initialUrl)
+    if (initialUrl) {
+      this.load(initialUrl)
     }
   }
 
@@ -301,13 +348,56 @@
 
   /**
    * Scroll the widget into view if its top edge is above the viewport
+   * (or hidden behind a fixed element, per `scrollOffset`).
    * @private
    */
   WidgetFrame.prototype._scrollIntoViewIfNeeded = function () {
     if (!this.element) return
+    const offset = this._resolveScrollOffset()
     const rect = this.element.getBoundingClientRect()
-    if (rect.top < 0) {
-      this.element.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    if (rect.top < offset) {
+      const y = rect.top + window.pageYOffset - offset
+      window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' })
+    }
+  }
+
+  /**
+   * Resolve scrollOffset to a pixel value. Numbers pass through; strings are
+   * either CSS lengths (10vh, 2rem, 5%) resolved by the browser, or CSS
+   * selectors whose height is measured at call time so responsive navbars
+   * are handled correctly. Invalid values resolve to 0 rather than throwing,
+   * so a bad offset never wipes the frame via the load() error path.
+   * @private
+   * @returns {number}
+   */
+  WidgetFrame.prototype._resolveScrollOffset = function () {
+    const offset = this.scrollOffset
+    if (!offset) return 0
+    if (typeof offset === 'number') return offset
+
+    // Bare numeric string ("80") → pixels
+    if (/^-?[\d.]+$/.test(offset)) {
+      const n = parseFloat(offset)
+      return isNaN(n) ? 0 : n
+    }
+
+    // CSS length: hand the value to the browser via a hidden probe element
+    if (/^-?[\d.]+(px|vh|vw|rem|em|%|ch|ex|vmin|vmax)$/i.test(offset)) {
+      const probe = document.createElement('div')
+      probe.style.cssText =
+        'position:absolute;visibility:hidden;height:' + offset
+      document.body.appendChild(probe)
+      const px = probe.getBoundingClientRect().height
+      document.body.removeChild(probe)
+      return px
+    }
+
+    // Otherwise treat as a CSS selector; swallow invalid-selector errors
+    try {
+      const el = document.querySelector(offset)
+      return el ? el.getBoundingClientRect().height : 0
+    } catch (e) {
+      return 0
     }
   }
 

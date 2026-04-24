@@ -27,8 +27,9 @@ Single-file library (`widget-frame.js`) using UMD pattern for CommonJS, AMD, and
 ## Development
 
 - No build system or package manager. Edit `widget-frame.js` directly.
-- When making changes (add feature, or fix issues), add to CHANGELOG.md under [Unreleased].
-- Update README.md with new documentation or configuration options, when relevant.
+- When making user-facing changes (new options, new behavior, new data attributes, new events), update **both**:
+  - `CHANGELOG.md` under `[Unreleased]`
+  - `README.md` — any new public option, data attribute, or event must be documented there before the change is considered complete.
 - Never commit changes unless you are explicitely asked to.
 
 **Release process:**

@@ -66,6 +66,7 @@ WidgetFrame.create({
   credentials: 'include',                        // Fetch credentials mode
   scrollToTop: true,                             // Scroll widget into view on navigation if top is off-screen
   headers: { 'X-Custom': 'value' },              // Additional headers
+  scrollOffset: '.site-navbar',                  // Pixel offset (number) or selector for a fixed navbar
 
   // Callbacks
   onLoad: function(element) { },                 // Called after content loads
@@ -87,6 +88,7 @@ WidgetFrame.create({
 | `credentials` | string | No | `include` | Fetch credentials mode |
 | `scrollToTop` | boolean | No | `true` | Scroll the widget into view after navigation when its top edge is above the viewport. Skipped on initial load. |
 | `headers` | object | No | See below | Additional headers for requests |
+| `scrollOffset` | number \| string | No | `0` | Space to leave above the widget when scrolling it into view (e.g. for a sticky navbar). Accepts a pixel number, a CSS length string (`"80px"`, `"10vh"`, `"2rem"`, `"5%"`), or a CSS selector whose element height is measured at scroll time so responsive navbars are handled correctly. Invalid values resolve to `0`. |
 | `onLoad` | function | No | - | Callback after content loads |
 | `onError` | function | No | - | Callback on error |
 
@@ -98,6 +100,32 @@ WidgetFrame.create({
   'X-Requested-With': 'XMLHttpRequest'
 }
 ```
+
+### Container Data Attributes
+
+A subset of options can be set directly on the container element via `data-*` attributes. This is useful for embed snippets where the person dropping the HTML into a page doesn't own the JS init call.
+
+```html
+<div
+  id="my-widget"
+  data-widget-frame-base-url="https://app.example.com"
+  data-widget-frame-initial-url="/widget/start"
+  data-widget-frame-scroll-offset=".site-navbar"
+></div>
+```
+
+**When both the JS option and the data attribute are set, the data attribute wins** — so embedders can override defaults supplied by a shared init script.
+
+| Data attribute | JS option | Notes |
+|---|---|---|
+| `data-widget-frame-base-url` | `baseUrl` | |
+| `data-widget-frame-initial-url` | `initialUrl` | |
+| `data-widget-frame-id` | `frameId` | |
+| `data-widget-frame-class` | `frameClass` | |
+| `data-widget-frame-scroll-to-top` | `scrollToTop` | `"true"` / `"false"` / `""` (empty = true); anything else falls back to the JS option |
+| `data-widget-frame-scroll-offset` | `scrollOffset` | Accepts pixel numbers (`"80"`), CSS lengths (`"80px"`, `"10vh"`, `"2rem"`, `"5%"`), or a CSS selector |
+
+Options not listed here (`loadingHtml`, `errorHtml`, `credentials`, `sessionHeader`, `headers`, `onLoad`, `onError`) are JS-only.
 
 ## API
 
