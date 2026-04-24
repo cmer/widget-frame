@@ -51,11 +51,27 @@ case $BUMP_TYPE in
 esac
 
 NEW_VERSION="$MAJOR.$MINOR.$PATCH"
-NEW_TAG="v$NEW_VERSION"
 
 echo "Current version: $LATEST_TAG"
-echo "New version: $NEW_TAG"
+read -e -i "$NEW_VERSION" -p "New version: v" NEW_VERSION
 echo ""
+
+# Strip any leading 'v' in case the user typed one
+NEW_VERSION=${NEW_VERSION#v}
+
+# Validate semver format
+if [[ ! "$NEW_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+  echo "Error: '$NEW_VERSION' is not a valid semver (expected X.Y.Z)."
+  exit 1
+fi
+
+NEW_TAG="v$NEW_VERSION"
+
+# Ensure the tag doesn't already exist
+if git rev-parse "$NEW_TAG" >/dev/null 2>&1; then
+  echo "Error: Tag $NEW_TAG already exists."
+  exit 1
+fi
 
 # Update CHANGELOG.md via Claude Code
 if ! command -v claude >/dev/null 2>&1; then
