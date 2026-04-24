@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **`scrollToTop` option** (default `true`): After in-widget navigation, scrolls the widget into view if its top edge is above the viewport. Prevents the second step of a long form from appearing below the fold when the user submits from a scrolled position. Does not fire on initial load.
+
 ## [0.2.3] - 2025-12-03
 
 ### Removed
