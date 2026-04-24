@@ -49,6 +49,7 @@
     frameClass: 'widget-frame-container',
     credentials: 'include', // 'include' for cross-origin cookies, 'same-origin' otherwise
     sessionHeader: 'X-Widget-Session', // Header for session token (cross-origin session support)
+    scrollToTop: true, // Scroll widget into view after navigation if its top is off-screen
     headers: {
       Accept: 'text/html, application/xhtml+xml',
       'X-Requested-With': 'XMLHttpRequest'
@@ -96,6 +97,7 @@
    * @param {string} [options.frameClass] - CSS class for the frame element
    * @param {string} [options.credentials] - Fetch credentials mode
    * @param {string} [options.sessionHeader] - Header name for session token (default: 'X-Widget-Session')
+   * @param {boolean} [options.scrollToTop=true] - Scroll widget into view on navigation if its top is off-screen
    * @param {Object} [options.headers] - Additional headers for fetch requests
    * @param {Function} [options.onLoad] - Callback after content loads
    * @param {Function} [options.onError] - Callback on error
@@ -116,6 +118,10 @@
     this.frameClass = options.frameClass || DEFAULTS.frameClass
     this.credentials = options.credentials || DEFAULTS.credentials
     this.sessionHeader = options.sessionHeader || DEFAULTS.sessionHeader
+    this.scrollToTop =
+      options.scrollToTop !== undefined
+        ? options.scrollToTop
+        : DEFAULTS.scrollToTop
     this.headers = Object.assign({}, DEFAULTS.headers, options.headers || {})
     this.onLoad = options.onLoad || null
     this.onError = options.onError || null
@@ -123,6 +129,10 @@
     // Session token for cross-origin session support
     // Stored from response headers and sent on subsequent requests
     this.sessionToken = null
+
+    // Tracks whether the first load has completed, so scrollToTop only
+    // runs on navigation within the widget, not on the initial load
+    this._initialLoadComplete = false
 
     // Create frame element
     this.element = document.createElement('div')
@@ -253,6 +263,10 @@
         const content = parseHtmlContent(html)
         if (content) {
           self.element.innerHTML = content
+          if (self.scrollToTop && self._initialLoadComplete) {
+            self._scrollIntoViewIfNeeded()
+          }
+          self._initialLoadComplete = true
           self._dispatchLoadEvent()
           if (self.onLoad) {
             self.onLoad(self.element)
@@ -282,6 +296,18 @@
     if (content) {
       this.element.innerHTML = content
       this._dispatchLoadEvent()
+    }
+  }
+
+  /**
+   * Scroll the widget into view if its top edge is above the viewport
+   * @private
+   */
+  WidgetFrame.prototype._scrollIntoViewIfNeeded = function () {
+    if (!this.element) return
+    const rect = this.element.getBoundingClientRect()
+    if (rect.top < 0) {
+      this.element.scrollIntoView({ behavior: 'smooth', block: 'start' })
     }
   }
 
