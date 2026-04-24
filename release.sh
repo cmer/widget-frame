@@ -1,5 +1,12 @@
-#!/bin/bash
+#!/usr/bin/env bash
 set -e
+
+# Require bash 4+ for `read -i` (macOS ships with bash 3.2).
+if ((BASH_VERSINFO[0] < 4)); then
+  echo "Error: bash 4+ is required (you have $BASH_VERSION)."
+  echo "Install a newer bash, e.g.: brew install bash"
+  exit 1
+fi
 
 # Release script for widget-frame
 # Usage: ./release.sh [major|minor|patch]
