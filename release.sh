@@ -17,6 +17,16 @@ if [[ ! "$BUMP_TYPE" =~ ^(major|minor|patch)$ ]]; then
   exit 1
 fi
 
+# Check for uncommitted changes
+if [[ -n $(git status --porcelain) ]]; then
+  echo "Error: You have uncommitted changes. Please commit or stash them first."
+  exit 1
+fi
+
+# Sync tags with remote so version bump is based on latest published release
+echo "Fetching latest tags from origin..."
+git fetch --tags --prune --prune-tags origin
+
 # Get the latest tag, default to v0.0.0 if none exists
 LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
 LATEST_VERSION=${LATEST_TAG#v}
@@ -47,19 +57,41 @@ echo "Current version: $LATEST_TAG"
 echo "New version: $NEW_TAG"
 echo ""
 
-# Check for uncommitted changes
-if [[ -n $(git status --porcelain) ]]; then
-  echo "Error: You have uncommitted changes. Please commit or stash them first."
+# Update CHANGELOG.md via Claude Code
+if ! command -v claude >/dev/null 2>&1; then
+  echo "Error: 'claude' CLI not found. Install Claude Code to continue."
   exit 1
 fi
 
-# Confirm release
-read -p "Create release $NEW_TAG? [y/N] " -n 1 -r
+RELEASE_DATE=$(date +%Y-%m-%d)
+
+echo "Updating CHANGELOG.md with Claude Code..."
+claude -p --permission-mode acceptEdits "Update CHANGELOG.md in the current directory: move all entries currently under the '## [Unreleased]' section into a new version section '## [$NEW_VERSION] - $RELEASE_DATE' placed immediately below '## [Unreleased]'. Leave '## [Unreleased]' present but empty (no subsections). Preserve all existing content and formatting. Do not modify any other files. If '## [Unreleased]' has no entries, exit without changes and print a message to stderr."
+
 echo ""
-if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-  echo "Aborted."
+echo "--- CHANGELOG.md changes ---"
+git --no-pager diff -- CHANGELOG.md
+echo "----------------------------"
+echo ""
+
+if [[ -z $(git status --porcelain CHANGELOG.md) ]]; then
+  echo "Error: No changes were made to CHANGELOG.md. Aborting."
   exit 1
 fi
+
+# Confirm CHANGELOG changes
+read -p "Accept these CHANGELOG.md changes and continue with release $NEW_TAG? [y/N] " -n 1 -r
+echo ""
+if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+  echo "Aborted. Reverting CHANGELOG.md changes."
+  git checkout -- CHANGELOG.md
+  exit 1
+fi
+
+# Commit the CHANGELOG update
+git add CHANGELOG.md
+git commit -m "Update CHANGELOG for $NEW_TAG"
+git push
 
 # Create and push tag
 git tag -a "$NEW_TAG" -m "Release $NEW_TAG"
