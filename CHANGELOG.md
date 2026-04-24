@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **`scrollOffset` option**: Tells `scrollToTop` how much space to leave above the widget for a host-page fixed element (e.g. a sticky navbar). Accepts a pixel number, a CSS length string (`"80px"`, `"10vh"`, `"2rem"`, `"5%"` — resolved by the browser), or a CSS selector whose element height is measured at scroll time so responsive navbars are handled correctly. Invalid values resolve to `0` instead of throwing. Defaults to `0`.
+- **Container data attributes**: A subset of options can now be configured via data attributes on the container element, so embedders can override config from HTML without touching the JS init. Supported: `data-widget-frame-base-url`, `data-widget-frame-initial-url`, `data-widget-frame-id`, `data-widget-frame-class`, `data-widget-frame-scroll-to-top`, `data-widget-frame-scroll-offset`. When both are set, the data attribute wins.
+
 ## [0.2.4] - 2026-04-24
 
 ### Added
