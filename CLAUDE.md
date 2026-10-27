@@ -42,3 +42,5 @@ This tags the version and pushes to origin.
 
 - Supports `data-turbo-confirm` attribute on forms for confirmation dialogs
 - Parses `<turbo-frame>` elements from server responses for Rails/Turbo backend compatibility
+
+End any turn that reports on long-running or delegated work with a short status: **Goal**, **Done**, **Next**, **Needs you** (or "nothing").
